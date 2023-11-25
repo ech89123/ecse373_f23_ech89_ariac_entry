@@ -1,5 +1,10 @@
 # ECSE 373 Laboratory #5 (Fall 2023)
-The ariac_entry package runs on  the ARIAC 2019 environment using ROS Noetic. More about ARIAC 2019 can be read here: https://bitbucket.org/osrf/ariac/wiki/2019/Home 
+The ariac_entry package runs on  the ARIAC 2019 environment using ROS Noetic. More about ARIAC 2019 can be read here: [Link]( https://bitbucket.org/osrf/ariac/wiki/2019/Home)  
+
+More information about the two workspaces can be found here:     
+[Simulation Environment Workspace](https://github.com/cwru-eecs-373/cwru_ariac_2019.git)  
+[ARIAC Node](https://github.com/cwru-eecs-373/ecse_373_ariac.git)  
+
 ## Preparing the Lab 
 Create the ARIAC workspace:  
 ```
