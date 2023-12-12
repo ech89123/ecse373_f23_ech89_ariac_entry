@@ -1,4 +1,4 @@
-# ECSE 373 Laboratory #5 (Fall 2023)
+# ECSE 373 Laboratory #7 (Fall 2023)
 The ariac_entry package runs on  the ARIAC 2019 environment using ROS Noetic. More about ARIAC 2019 can be read here: [Link]( https://bitbucket.org/osrf/ariac/wiki/2019/Home)  
 
 More information about the two workspaces can be found here:     
@@ -46,11 +46,14 @@ source devel/setup.bash
 ```
 
 ## Launching the Lab 
-After the package the required two workspaces have been installed from the previous step, the following three lines can be ran to run the package:
+After the package the required two workspaces have been installed from the previous step, the following three lines can be ran to run the package. The first line starts the simulation and the second line starts the node and the competition:
 ```
-source devel/setup.bash
-roscore &  
-roslaunch ariac_entry entry.launch  
+`roslaunch ariac_entry entry.launch`
+
+Then, the ariac_entry node:
+
+`rosrun ariac_entry ariac_entry`
+
 ```
 ## What the Package Does  
 The package starts the competition and gives a strong error message if the competition fails to contact the start_competition service. A less strong error message is sent if the contact is successful, but the competition sill is unsuccessful in starting.  
@@ -58,3 +61,8 @@ The package starts the competition and gives a strong error message if the compe
 The package then subscribes to the Orders topic and takes in orders and uses the material_location service to find the correct bin for the first product of the first shipment of each order. The package also subscribes to all logical_cameras and stores the information.  
   
 Sends a message using ROS_WARN to give the bin number and the position of the part in reference to the camera and in reference to the arm.
+
+The package also moves the manipulator over each part in a bin and back using a call to the Action Server interface.  
+  
+## Known Errors
+I have spent way to much time than I have to try and get the arm to move properly. The arm does move but there is some uncertainty in the movement. For the final lab, I have written code but without a fully functioning arm, testing will be difficult. I have tried many different solutions and I am at the point where I no longer have time to invest to get a fully functioning arm as wanted. 
