@@ -26,6 +26,9 @@
 #include "osrf_gear/VacuumGripperControl.h"
 #include "osrf_gear/VacuumGripperState.h"
 
+//phase 2
+#include "osrf_gear/AGVControl.h"
+
 ros::ServiceClient material_locations_client; 
 std::vector<osrf_gear::Order> orderVector;
 osrf_gear::LogicalCameraImage::ConstPtr cameraVector[10];
@@ -41,7 +44,8 @@ int count = 0;
 //phase 1
 ros::ServiceClient gripper_client;
 
-
+//phase 2
+ros::ServiceClient agv_client;
 
 void operateGripper(bool attach) {
     osrf_gear::VacuumGripperControl srv;
@@ -235,6 +239,16 @@ void processOrder() {
   osrf_gear::Order firstOrder = orderVector[0];
 
   for(osrf_gear::Shipment shipment: firstOrder.shipments) {
+  
+    double agv_lin;
+    std::string agv_camera_frame;
+    std::string agv_id = shipment.agv_id;
+    double y_modify;
+    agv_lin = 2;
+    agv_camera_frame = "logical_camera_agv1_frame";
+    y_modify = -0.2;
+      
+    
     for(osrf_gear::Product product:shipment.products) {	
 				
       osrf_gear::GetMaterialLocations material_locations_srv;
@@ -320,22 +334,22 @@ void processOrder() {
 	    moveArm(model, frame, 1); //move arm above
 	    moveArm(model, frame, -1); //move arm down
 	    operateGripper(true); //pick up
-	    moveArm(model, frame, 1); //move arm up
-	    moveArm(model, frame, -1); //move arm down 
-	    operateGripper(false); //drop 
+	    moveArm(model, frame, 3); //move arm up
 	    
-	    //do again for phase 1
-	    moveArm(model, frame, 1); //move arm above
-	    moveArm(model, frame, -1); //move arm down
-	    operateGripper(true); //pick up
-	    moveArm(model, frame, 1); //move arm up
-	    moveArm(model, frame, -1); //move arm down 
-	    operateGripper(false); //drop 
-	    
+	    moveBase(agv_lin); //move base to avg
+	    moveArm(model, agv_camera_frame, 1); //move arm above
+	    moveArm(model, agv_camera_frame, -1); //move arm down
+	    operateGripper(false); //drop
   	    break;					
           }
         }				
     }
+    //submit
+    osrf_gear::AGVControl submit;
+    submit.request.shipment_type = shipment.shipment_type;
+    agv_client.call(submit);
+    ros::Duration(10).sleep();
+    ROS_INFO("Submitted");
   }
   orderVector.erase(orderVector.begin());
 }
@@ -378,6 +392,10 @@ int main(int argc, char **argv) {
 
   //phase 1
   gripper_client = n.serviceClient<osrf_gear::VacuumGripperControl>("/ariac/arm1/gripper/control");
+  
+  //phase 2
+  agv_client = n.serviceClient<osrf_gear::AGVControl>("/ariac/agv1");
+  
   
   std::vector<ros::Subscriber> camera_list;
 
@@ -423,4 +441,7 @@ int main(int argc, char **argv) {
   	
   return 0;
 }  
+
+
+
 
