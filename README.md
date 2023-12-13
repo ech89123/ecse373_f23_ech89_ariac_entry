@@ -63,7 +63,7 @@ This is the final submission of Lab 5 that reads and prints positions of parts.
 ### trajectory_topic
 This is the first tag of Lab 7 that includes the `trajectory_topic` which allows the arm to move.
 ### laboratory_7
-This is the final submission of Lab 7 that moves the arm using the ‘actionlib’ client.    
+This is the final submission of Lab 7 that moves the arm using the `actionlib` client.    
 ### phase_1
 This is phase one of the final project that grabs, lifts, and drops a part.  
 ### phase_2
@@ -73,8 +73,10 @@ This is phase three of the final project that moves parts to either of the two A
 ### phase_4
 This is phase four which is the final phase of the project. This phase submits two orders with two shipments and multiple parts using both AGVs. 
 ## Theory of Operation
+![image](FlowDiagram.JPG "Theory of Operation")
 ## Known Errors
 The final lab seems to have all working subcomponents. This means that the proper arm movement, grabbing and dropping the gripper, moving along the beam, going to correct components, and completing an order can all be done. The problem with the final submission comes with putting all the parts together consistently and accurately. The project does not run as wanted but due to the time constraints I have done my best to put all subcomponents of the project together. Please refer to the source code to see the subcomponents and the work put in to implement them. 
+  
 __NOTE__: On occasion, the lab fails when the node is started. It is unknown why but just restart the launch process and it will work.
 
 
