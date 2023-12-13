@@ -26,7 +26,7 @@
 #include "osrf_gear/VacuumGripperControl.h"
 #include "osrf_gear/VacuumGripperState.h"
 
-//phase 2
+//phase 2/3
 #include "osrf_gear/AGVControl.h"
 
 ros::ServiceClient material_locations_client; 
@@ -44,8 +44,10 @@ int count = 0;
 //phase 1
 ros::ServiceClient gripper_client;
 
-//phase 2
-ros::ServiceClient agv_client;
+//phase 2/3
+ros::ServiceClient agv1_client;
+ros::ServiceClient agv2_client;
+
 
 void operateGripper(bool attach) {
     osrf_gear::VacuumGripperControl srv;
@@ -241,13 +243,19 @@ void processOrder() {
   for(osrf_gear::Shipment shipment: firstOrder.shipments) {
   
     double agv_lin;
+    int agv_num;
     std::string agv_camera_frame;
     std::string agv_id = shipment.agv_id;
-    double y_modify;
-    agv_lin = 2;
-    agv_camera_frame = "logical_camera_agv1_frame";
-    y_modify = -0.2;
-      
+
+    if (agv_id == "agv1") {
+      agv_lin = 2;
+      agv_num = 1;
+      agv_camera_frame = "logical_camera_agv1_frame";
+    } else {
+      agv_lin = -2.25;
+      agv_num = 2;
+      agv_camera_frame = "logical_camera_agv2_frame";
+    }
     
     for(osrf_gear::Product product:shipment.products) {	
 				
@@ -347,7 +355,13 @@ void processOrder() {
     //submit
     osrf_gear::AGVControl submit;
     submit.request.shipment_type = shipment.shipment_type;
-    agv_client.call(submit);
+    
+    if (agv_num == 1) {
+      agv1_client.call(submit);
+    } else {
+      agv2_client.call(submit);
+    }
+    
     ros::Duration(10).sleep();
     ROS_INFO("Submitted");
   }
@@ -393,9 +407,9 @@ int main(int argc, char **argv) {
   //phase 1
   gripper_client = n.serviceClient<osrf_gear::VacuumGripperControl>("/ariac/arm1/gripper/control");
   
-  //phase 2
-  agv_client = n.serviceClient<osrf_gear::AGVControl>("/ariac/agv1");
-  
+  //phase 2/3
+  agv1_client = n.serviceClient<osrf_gear::AGVControl>("/ariac/agv1");
+  agv2_client = n.serviceClient<osrf_gear::AGVControl>("/ariac/agv2");
   
   std::vector<ros::Subscriber> camera_list;
 
@@ -441,7 +455,6 @@ int main(int argc, char **argv) {
   	
   return 0;
 }  
-
 
 
 
