@@ -340,13 +340,13 @@ void processOrder() {
 	    ROS_INFO("Moving base the base");			
 	    moveBase(base_pos); //move base	
 	    moveArm(model, frame, 1); //move arm above
-	    moveArm(model, frame, -1); //move arm down
+	    moveArm(model, frame, -0.1); //move arm down
 	    operateGripper(true); //pick up
 	    moveArm(model, frame, 3); //move arm up
-	    
+	    ros::Duration(5).sleep();
 	    moveBase(agv_lin); //move base to avg
 	    moveArm(model, agv_camera_frame, 1); //move arm above
-	    moveArm(model, agv_camera_frame, -1); //move arm down
+	    moveArm(model, agv_camera_frame, -0.1); //move arm down
 	    operateGripper(false); //drop
   	    break;					
           }
