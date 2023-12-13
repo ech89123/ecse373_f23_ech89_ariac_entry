@@ -22,6 +22,10 @@
 #include "actionlib/client/terminal_state.h"
 #include "control_msgs/FollowJointTrajectoryAction.h"
 
+//phase 1 for Gripper
+#include "osrf_gear/VacuumGripperControl.h"
+#include "osrf_gear/VacuumGripperState.h"
+
 ros::ServiceClient material_locations_client; 
 std::vector<osrf_gear::Order> orderVector;
 osrf_gear::LogicalCameraImage::ConstPtr cameraVector[10];
@@ -33,6 +37,26 @@ actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> *trajec
 ros::ServiceClient ik_client;
 std::string currentJointStatesName;
 int count = 0;
+
+//phase 1
+ros::ServiceClient gripper_client;
+
+
+
+void operateGripper(bool attach) {
+    osrf_gear::VacuumGripperControl srv;
+    srv.request.enable = attach;
+
+    if (gripper_client.call(srv)) {
+        if (srv.response.success) {
+            ROS_INFO("Gripper operation %s", attach ? "Attched" : "Detached");
+        } else {
+            ROS_WARN("Gripper operation failed");
+        }
+    } else {
+        ROS_ERROR("Failed to call the gripper service");
+    }
+}
 
 void actionServer(trajectory_msgs::JointTrajectory joint_trajectory) {
 	
@@ -68,7 +92,7 @@ void moveArm(osrf_gear::Model model, std::string frame, double polarity) {
   part_pose.pose = model.pose;
   tf2::doTransform(part_pose, goal_pose, transformStamped);
 	
-  goal_pose.pose.position.z += (0.1 * polarity);	
+  goal_pose.pose.position.z += (0.05 * polarity);	
 	
   geometry_msgs::Point position = goal_pose.pose.position;
   geometry_msgs::Quaternion orientation = goal_pose.pose.orientation;
@@ -120,12 +144,33 @@ void moveArm(osrf_gear::Model model, std::string frame, double polarity) {
   joint_trajectory.points[1].positions.resize(joint_trajectory.joint_names.size());
   joint_trajectory.points[1].positions[0] = joint_states.position[1];
   joint_trajectory.points[1].time_from_start = ros::Duration(1.0);
-	
 
-  for (int indy = 0; indy < 6; indy++) {
-    joint_trajectory.points[1].positions[indy+1] = ik_pose.response.joint_solutions[0].joint_angles[indy];
+  double target_angle = 3.0 / 2.0 * M_PI; 
+  int best_solution_index = -1;
+  double best_angle = 10000; 
+  for (int i = 0; i < num_sols; i++) {
+    double pan_angle = ik_pose.response.joint_solutions[i].joint_angles[0];
+    double shoulder_angle = ik_pose.response.joint_solutions[i].joint_angles[1];
+    double wrist_1_angle = ik_pose.response.joint_solutions[i].joint_angles[3];
+    
+    if (abs(M_PI - pan_angle) >= M_PI / 2 || abs(M_PI - wrist_1_angle) >= M_PI / 2) {
+      continue;
+    }
+
+    double dist = std::min(fabs(shoulder_angle - target_angle), 2.0 * M_PI - fabs(shoulder_angle - target_angle));
+    if (dist < best_angle){
+      best_angle = dist;
+      best_solution_index = i;
+    }
   }
-
+  
+  for (int indy = 0; indy < 6; indy++) {
+    joint_trajectory.points[1].positions[indy+1] = ik_pose.response.joint_solutions[best_solution_index].joint_angles[indy];
+  }
+  
+  
+  
+  
   joint_trajectory.points[1].time_from_start = ros::Duration(5.0);
 
   actionServer(joint_trajectory);
@@ -271,10 +316,22 @@ void processOrder() {
 	    }
 						
 	    ROS_INFO("Moving base the base");			
-	    moveBase(base_pos);		
-	    moveArm(model, frame, 1); 
-	    moveArm(model, frame, -1); 
-	    moveArm(model, frame, 1); 
+	    moveBase(base_pos); //move base	
+	    moveArm(model, frame, 1); //move arm above
+	    moveArm(model, frame, -1); //move arm down
+	    operateGripper(true); //pick up
+	    moveArm(model, frame, 1); //move arm up
+	    moveArm(model, frame, -1); //move arm down 
+	    operateGripper(false); //drop 
+	    
+	    //do again for phase 1
+	    moveArm(model, frame, 1); //move arm above
+	    moveArm(model, frame, -1); //move arm down
+	    operateGripper(true); //pick up
+	    moveArm(model, frame, 1); //move arm up
+	    moveArm(model, frame, -1); //move arm down 
+	    operateGripper(false); //drop 
+	    
   	    break;					
           }
         }				
@@ -318,6 +375,10 @@ int main(int argc, char **argv) {
   trajectoryAction = new actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>("/ariac/arm1/arm/follow_joint_trajectory/", true);
   ik_client = n.serviceClient<ik_service::PoseIK>("/pose_ik");
 
+
+  //phase 1
+  gripper_client = n.serviceClient<osrf_gear::VacuumGripperControl>("/ariac/arm1/gripper/control");
+  
   std::vector<ros::Subscriber> camera_list;
 
   camera_list.push_back(n.subscribe<osrf_gear::LogicalCameraImage>("/ariac/logical_camera_bin1", 1000, boost::bind(cameraCallback, 0, _1)));
